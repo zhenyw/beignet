@@ -26,6 +26,7 @@
 #include "cl_khr_icd.h"
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <pthread.h>
 
 /* DRI device created at create context */
@@ -93,6 +94,28 @@ struct _cl_context_prop {
   };
 };
 
+struct perf_query_counter;
+struct perf_oa_counter;
+
+struct perf_query
+{
+   const char *name;
+   struct perf_query_counter *counters;
+   int n_counters;
+   size_t data_size;
+
+   /* OA specific */
+   int oa_metrics_set;
+   int oa_format;
+   struct perf_oa_counter *oa_counters;
+   int n_oa_counters;
+};
+
+#define MAX_PERF_QUERIES 2
+#define MAX_PERF_QUERY_COUNTERS 150
+#define MAX_OA_QUERY_COUNTERS 100
+#define MAX_RAW_OA_COUNTERS 62
+
 #define IS_EGL_CONTEXT(ctx)  (ctx->props.gl_type == CL_GL_EGL_DISPLAY)
 #define EGL_DISP(ctx)   (EGLDisplay)(ctx->props.egl_display)
 #define EGL_CTX(ctx)    (EGLContext)(ctx->props.gl_context)
@@ -127,6 +150,66 @@ struct _cl_context {
                                      /* User's callback when error occur in context */
   void *user_data;                   /* A pointer to user supplied data */
 
+  struct {
+    struct perf_query queries[MAX_PERF_QUERIES];
+    int n_queries;
+    bool enable;
+
+    /* A common OA counter that we want to read directly in several places */
+    uint64_t (*read_oa_report_timestamp)(uint32_t *report);
+
+    /* Needed to normalize counters aggregated across all EUs */
+    int eu_count;
+
+    /* The i915_oa perf event we open to setup + enable the OA counters */
+    int perf_oa_event_fd;
+
+    /* An i915_oa perf event fd gives exclusive access to the OA unit that
+     * will report counter snapshots for a specific counter set/profile in a
+     * specific layout/format so we can only start OA queries that are
+     * compatible with the currently open fd... */
+    int perf_oa_metrics_set;
+    int perf_oa_format;
+
+    /* The mmaped circular buffer for collecting samples from perf */
+    uint8_t *perf_oa_mmap_base;
+    size_t perf_oa_buffer_size;
+    struct perf_event_mmap_page *perf_oa_mmap_page;
+
+    /* The system's page size */
+    unsigned int page_size;
+
+    /* TODO: generalize and split these into an array indexed by the
+     * query type... */
+    int n_active_oa_queries;
+
+    /* The number of queries depending on running OA counters which
+     * extends beyond brw_end_perf_query() since we need to wait until
+     * the last MI_RPC command has been written. */
+    int n_oa_users;
+
+    /* We also get the gpu to write an ID for snapshots corresponding
+     * to the beginning and end of a query, but for simplicity these
+     * IDs use a separate namespace. */
+    int next_query_start_report_id;
+
+    /**
+     * An array of queries whose results haven't yet been assembled based on
+     * the data in buffer objects.
+     *
+     * These may be active, or have already ended.  However, the results
+     * have not been requested.
+     */
+    struct perf_query_object **unresolved;
+    int unresolved_elements;
+    int unresolved_array_size;
+
+    /* The total number of query objects so we can relinquish
+     * our exclusive access to perf if the application deletes
+     * all of its objects. (NB: We only disable perf while
+     * there are no active queries) */
+    int n_query_instances;
+  } perfquery;
 };
 
 /* Implement OpenCL function */

@@ -321,6 +321,7 @@
 #define GEN7_PIPE_CONTROL_WRITE_TIMESTAMP        (3 << 14)
 #define GEN7_PIPE_CONTROL_GLOBAL_GTT_WRITE       (1 << 2)
 
+#define MI_REPORT_PERF_COUNT ((0x28 << 23) | (3 - 2))
 
 #define GEN_MAPFILTER_NEAREST        0x0
 #define GEN_MAPFILTER_LINEAR         0x1

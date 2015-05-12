@@ -133,6 +133,100 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *clGetMemObjectFdIntel_fn)(
                              cl_mem       /* Memory Obejct */,
                              int*         /* returned fd */);
 
+/* Intel performance query */
+
+#define PERFQUERY_COUNTER_EVENT_INTEL                0x94F0
+#define PERFQUERY_COUNTER_DURATION_NORM_INTEL        0x94F1
+#define PERFQUERY_COUNTER_DURATION_RAW_INTEL         0x94F2
+#define PERFQUERY_COUNTER_THROUGHPUT_INTEL           0x94F3
+#define PERFQUERY_COUNTER_RAW_INTEL                  0x94F4
+#define PERFQUERY_COUNTER_TIMESTAMP_INTEL            0x94F5
+
+#define PERFQUERY_COUNTER_DATA_UINT32_INTEL          0x94F8
+#define PERFQUERY_COUNTER_DATA_UINT64_INTEL          0x94F9
+#define PERFQUERY_COUNTER_DATA_FLOAT_INTEL           0x94FA
+#define PERFQUERY_COUNTER_DATA_DOUBLE_INTEL          0x94FB
+#define PERFQUERY_COUNTER_DATA_BOOL32_INTEL          0x94FC
+  
+typedef struct perf_query_object *cl_perf_query_intel;
+  
+extern CL_API_ENTRY void CL_API_CALL
+clGetFirstPerfQueryIdIntel(cl_context ctx, cl_uint *queryId);
+typedef CL_API_ENTRY void (CL_API_CALL *clGetFirstPerfQueryIdIntel_fn)(cl_context ctx,
+								       cl_uint *queryId);
+
+extern CL_API_ENTRY void CL_API_CALL
+clGetNextPerfQueryIdIntel(cl_context ctx, cl_uint queryId, cl_uint *nextQueryId);
+typedef CL_API_ENTRY void (CL_API_CALL *clGetNextPerfQueryIdIntel_fn)(cl_context ctx,
+								      cl_uint queryId,
+								      cl_uint *nextQueryId);
+
+extern CL_API_ENTRY void CL_API_CALL
+clGetPerfQueryInfoIntel(cl_context ctx,
+			cl_uint queryId,
+			cl_uint queryNameLength, cl_char *queryName,
+			cl_uint *dataSize, cl_uint *noCounters,
+			cl_uint *noInstances);
+typedef CL_API_ENTRY void (CL_API_CALL *clGetPerfQueryInfoIntel_fn)(cl_context ctx,
+								    cl_uint queryId,
+								    cl_uint queryNameLength,
+								    cl_char *queryName,
+								    cl_uint *dataSize,
+								    cl_uint *noCounters,
+								    cl_uint *noInstances);
+  
+extern CL_API_ENTRY void CL_API_CALL
+clGetPerfCounterInfoIntel(cl_context ctx,
+			  cl_uint queryId, cl_uint counterId,
+			  cl_uint counterNameLength, cl_char *counterName,
+			  cl_uint counterDescLength, cl_char *counterDesc,
+			  cl_uint *counterOffset, cl_uint *counterDataSize,
+			  cl_uint *counterTypeEnum, cl_uint *counterDataTypeEnum,
+			  cl_ulong *rawCounterMaxValue);
+typedef CL_API_ENTRY void
+(CL_API_CALL *clGetPerfCounterInfoIntel_fn)(cl_context ctx,
+					    cl_uint queryId,
+					    cl_uint counterId,
+					    cl_uint counterNameLength, cl_char *counterName,
+					    cl_uint counterDescLength, cl_char *counterDesc,
+					    cl_uint *counterOffset, cl_uint *counterDataSize,
+					    cl_uint *counterTypeEnum, cl_uint *counterDataTypeEnum,
+					    cl_ulong *rawCounterMaxValue);
+
+extern CL_API_ENTRY cl_int CL_API_CALL
+clCreatePerfQueryIntel(cl_context context, cl_uint queryId, cl_perf_query_intel *queryHandle);
+typedef CL_API_ENTRY cl_int
+(CL_API_CALL *clCreatePerfQueryIntel_fn)(cl_context context,
+					 cl_uint queryId,
+					 cl_perf_query_intel *queryHandle);
+
+extern CL_API_ENTRY cl_int CL_API_CALL
+clDeletePerfQueryIntel(cl_context context, cl_perf_query_intel queryHandle);
+typedef CL_API_ENTRY cl_int
+(CL_API_CALL *clDeletePerfQueryIntel_fn)(cl_context context,
+					 cl_perf_query_intel queryHandle);
+
+extern CL_API_ENTRY cl_int CL_API_CALL
+clBeginPerfQueryIntel(cl_context context, cl_perf_query_intel queryHandle);
+typedef CL_API_ENTRY cl_int (CL_API_CALL *clBeginPerfQueryIntel_fn)(cl_context context,
+								    cl_perf_query_intel queryHandle);
+
+extern CL_API_ENTRY cl_int CL_API_CALL
+clEndPerfQueryIntel(cl_context context, cl_perf_query_intel queryHandle);
+typedef CL_API_ENTRY cl_int (CL_API_CALL *clEndPerfQueryIntel_fn)(cl_context context,
+								  cl_perf_query_intel queryHandle);
+
+extern CL_API_ENTRY cl_int CL_API_CALL
+clGetPerfQueryDataIntel(cl_context context,
+			cl_perf_query_intel queryHandle,
+			cl_uint flags, size_t dataSize, void *data,
+			cl_uint *bytesWritten);
+typedef CL_API_ENTRY cl_int
+(CL_API_CALL *clGetPerfQueryDataIntel_fn)(cl_context context,
+					  cl_perf_query_intel queryHandle,
+					  cl_uint flags, size_t dataSize, void *data,
+					  cl_uint *bytesWritten);
+
 #ifdef __cplusplus
 }
 #endif

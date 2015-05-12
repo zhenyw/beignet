@@ -88,6 +88,7 @@ set(OPENCL_SRC
     intel/intel_gpgpu.c
     intel/intel_batchbuffer.c
     intel/intel_driver.c
+    intel/intel_perf.c
     performance.c)
 
 if (X11_FOUND)

@@ -42,6 +42,8 @@
 
 #include "performance.h"
 
+#include "intel_perf.h"
+
 #ifndef CL_VERSION_1_2
 #define CL_MAP_WRITE_INVALIDATE_REGION              (1 << 2)
 #define CL_DEVICE_TYPE_CUSTOM                       (1 << 4)
@@ -3180,6 +3182,15 @@ internal_clGetExtensionFunctionAddress(const char *func_name)
   EXTFUNC(clCreateBufferFromLibvaIntel)
   EXTFUNC(clCreateImageFromLibvaIntel)
   EXTFUNC(clGetMemObjectFdIntel)
+  EXTFUNC(clGetFirstPerfQueryIdIntel)
+  EXTFUNC(clGetNextPerfQueryIdIntel)
+  EXTFUNC(clGetPerfQueryInfoIntel)
+  EXTFUNC(clGetPerfCounterInfoIntel)
+  EXTFUNC(clCreatePerfQueryIntel)
+  EXTFUNC(clDeletePerfQueryIntel)
+  EXTFUNC(clBeginPerfQueryIntel)
+  EXTFUNC(clEndPerfQueryIntel)
+  EXTFUNC(clGetPerfQueryDataIntel)
   return NULL;
 }
 
@@ -3345,6 +3356,233 @@ clGetMemObjectFdIntel(cl_context context,
 
   err = cl_mem_get_fd(memobj, fd);
 
+error:
+  return err;
+}
+
+/* Intel performance query extension */
+static bool
+_check_query_id_valid(cl_context ctx, cl_uint id)
+{
+  return (id >= ctx->perfquery.n_queries) ? false : true;
+}
+
+static bool
+_check_counter_id_valid(cl_context ctx, cl_uint query_id, cl_uint counter_id)
+{
+  if (!_check_query_id_valid(ctx, query_id))
+    return false;
+  return (counter_id >= ctx->perfquery.queries[query_id].n_counters) ? false : true;
+}
+
+
+CL_API_ENTRY void CL_API_CALL
+clGetFirstPerfQueryIdIntel(cl_context ctx, cl_uint *queryId)
+{
+  if (!ctx->perfquery.enable)
+    return;
+
+  intel_perf_query_first(ctx, queryId);
+}
+
+CL_API_ENTRY void CL_API_CALL
+clGetNextPerfQueryIdIntel(cl_context ctx, cl_uint queryId, cl_uint *nextQueryId)
+{
+  if (!ctx->perfquery.enable)
+    return;
+
+  if (!_check_query_id_valid(ctx, queryId))
+    return;
+  
+  intel_perf_query_next(ctx, queryId, nextQueryId);
+}
+
+static void
+return_string(cl_char *stringRet, cl_uint stringMaxLen, const cl_char *string)
+{
+  if (!stringRet)
+    return;
+
+  strncpy(stringRet, string ? string : "", stringMaxLen);
+
+  if (stringMaxLen > 0)
+    stringRet[stringMaxLen - 1] = '\0';
+}
+
+CL_API_ENTRY void CL_API_CALL
+clGetPerfQueryInfoIntel(cl_context ctx,
+			cl_uint queryId,
+			cl_uint queryNameLength, cl_char *queryName,
+			cl_uint *dataSize, cl_uint *noCounters,
+			cl_uint *noInstances)
+{
+  cl_char *name;
+  cl_uint data_size;
+  cl_uint no_counter;
+  cl_uint no_instance;
+  
+  if (!ctx->perfquery.enable)
+    return;
+
+  if (!_check_query_id_valid(ctx, queryId))
+    return;
+  
+  intel_perf_query_info(ctx, queryId, &name,
+			&data_size, &no_counter, &no_instance);
+  return_string(queryName, queryNameLength, name);
+
+  if (dataSize)
+    *dataSize = data_size;
+
+  if (noCounters)
+    *noCounters = no_counter;
+
+  if (noInstances)
+    *noInstances = no_instance;
+}
+
+CL_API_ENTRY void CL_API_CALL
+clGetPerfCounterInfoIntel(cl_context ctx,
+			  cl_uint queryId, cl_uint counterId,
+			  cl_uint counterNameLength, cl_char *counterName,
+			  cl_uint counterDescLength, cl_char *counterDesc,
+			  cl_uint *counterOffset, cl_uint *counterDataSize,
+			  cl_uint *counterTypeEnum, cl_uint *counterDataTypeEnum,
+			  cl_ulong *rawCounterMaxValue)
+{
+  cl_char *name;
+  cl_char *desc;
+  cl_uint offset;
+  cl_uint data_size;
+  cl_uint counter_type;
+  cl_uint data_type;
+  cl_ulong raw_max;
+  
+  if (!ctx->perfquery.enable)
+    return;
+
+  if (!_check_counter_id_valid(ctx, queryId, counterId))
+    return;
+
+  intel_perf_counter_info(ctx, queryId, counterId,
+			  &name, &desc, &offset, &data_size,
+			  &counter_type, &data_type,
+			  &raw_max);
+  
+  return_string(counterName, counterNameLength, name);
+  return_string(counterDesc, counterDescLength, desc);
+  if (counterOffset)
+    *counterOffset = offset;
+  if (counterDataSize)
+    *counterDataSize = data_size;
+  if (counterTypeEnum)
+    *counterTypeEnum = counter_type;
+  if (counterDataTypeEnum)
+    *counterDataTypeEnum = data_type;
+  if (rawCounterMaxValue)
+    *rawCounterMaxValue = raw_max;
+}
+
+CL_API_ENTRY cl_int CL_API_CALL
+clCreatePerfQueryIntel(cl_context context, cl_uint queryId, cl_perf_query_intel *queryHandle)
+{
+  cl_int err = CL_SUCCESS;
+  cl_perf_query_intel handle;
+  CHECK_CONTEXT (context);
+
+  if (!context->perfquery.enable) {
+    err = CL_INVALID_VALUE;
+    goto error;
+  }
+
+  if (!_check_query_id_valid(context, queryId)) {
+    err = CL_INVALID_VALUE;
+    goto error;
+  }
+
+  /* current allow 1 instance */
+  if (context->perfquery.n_query_instances) {
+    err = CL_INVALID_VALUE;
+    goto error;
+  }
+
+  err = intel_perf_query_create(context, queryId, &handle);
+
+  if (!err && queryHandle)
+    *queryHandle = handle;
+  
+error:
+  return err;
+}
+
+CL_API_ENTRY cl_int CL_API_CALL
+clDeletePerfQueryIntel(cl_context context, cl_perf_query_intel queryHandle)
+{
+  cl_int err = CL_SUCCESS;
+  CHECK_CONTEXT (context);
+
+  if (!context->perfquery.enable) {
+    err = CL_INVALID_VALUE;
+    goto error;
+  }
+
+  err = intel_perf_query_delete(context, queryHandle);
+    
+error:
+  return err;
+}
+
+CL_API_ENTRY cl_int CL_API_CALL
+clBeginPerfQueryIntel(cl_context context, cl_perf_query_intel queryHandle)
+{
+  cl_int err = CL_SUCCESS;
+  CHECK_CONTEXT(context);
+
+  if (!context->perfquery.enable) {
+    err = CL_INVALID_VALUE;
+    goto error;
+  }
+
+  err = intel_perf_query_begin(context, queryHandle);
+    
+error:
+  return err;
+}
+
+CL_API_ENTRY cl_int CL_API_CALL
+clEndPerfQueryIntel(cl_context context, cl_perf_query_intel queryHandle)
+{
+  cl_int err = CL_SUCCESS;
+  CHECK_CONTEXT(context);
+
+  if (!context->perfquery.enable) {
+    err = CL_INVALID_VALUE;
+    goto error;
+  }
+
+  err = intel_perf_query_end(context, queryHandle);
+    
+error:
+  return err;
+}
+
+CL_API_ENTRY cl_int CL_API_CALL
+clGetPerfQueryDataIntel(cl_context context,
+			cl_perf_query_intel queryHandle,
+			cl_uint flags, size_t dataSize, void *data,
+			cl_uint *bytesWritten)
+{
+  cl_int err = CL_SUCCESS;
+  CHECK_CONTEXT(context);
+
+  if (!context->perfquery.enable) {
+    err = CL_INVALID_VALUE;
+    goto error;
+  }
+
+  err = intel_perf_query_get_data(context, queryHandle, flags,
+				  dataSize, data, bytesWritten);
+    
 error:
   return err;
 }

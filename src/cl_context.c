@@ -32,6 +32,8 @@
 #include "CL/cl.h"
 #include "CL/cl_gl.h"
 
+#include "intel_perf.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -150,6 +152,8 @@ cl_create_context(const cl_context_properties *  properties,
   ctx->pfn_notify = pfn_notify;
   ctx->user_data = user_data;
 
+  intel_perf_query_init(ctx);
+  
 exit:
   if (errcode_ret != NULL)
     *errcode_ret = err;
@@ -196,6 +200,8 @@ cl_context_delete(cl_context ctx)
   if (atomic_dec(&ctx->ref_n) > 1)
     return;
 
+  intel_perf_query_destroy(ctx);
+  
   /* delete the internal programs. */
   for (i = CL_INTERNAL_KERNEL_MIN; i < CL_INTERNAL_KERNEL_MAX; i++) {
     if (ctx->internel_kernels[i]) {
