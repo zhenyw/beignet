@@ -1,0 +1,95 @@
+
+#CL Intel performance query extension
+
+This is based on https://www.opengl.org/registry/specs/INTEL/performance_query.txt
+
+Kernel i915 PMU driver would provide hardware counter query interface
+based on linux perf syscall. CL driver uses perf syscall to create and
+get performance counters info related to compute engine.
+
+##clGetFirstQueryIdIntel(cl_context ctx, cl_uint *queryId)
+
+Get initial perf query Id.
+
+##clGetNextPerfQueryIdIntel(cl_context ctx, cl_uint queryId, cl_uint *nextQueryId)
+
+Get next perf query Id. If nextQueryId is equal to queryId, means there's no other queries.
+
+##clGetPerfQueryInfoIntel(cl_context ctx,
+			cl_uint queryId,
+			cl_uint queryNameLength, cl_char *queryName,
+			cl_uint *dataSize, cl_uint *noCounters,
+			cl_uint *noInstances)
+
+For specified queryId, get perf query information.
+
+dataSize: means the size for perf data buffer
+noCounters: means how much perf counters are contained.
+	    counterId counts from 0 ~ (noCounters - 1).
+noInstances: means how much simultaneously active instances can be,
+	     currently one instance is allowed.
+
+##clGetPerfCounterInfoIntel(cl_context ctx,
+			  cl_uint queryId, cl_uint counterId,
+			  cl_uint counterNameLength, cl_char *counterName,
+			  cl_uint counterDescLength, cl_char *counterDesc,
+			  cl_uint *counterOffset, cl_uint *counterDataSize,
+			  cl_uint *counterTypeEnum, cl_uint *counterDataTypeEnum,
+			  cl_ulong *rawCounterMaxValue)
+
+Get specified counter info with counterId for queryId.
+
+counterOffset: counter offset in perf data buffer
+counterDataSize: counter data size
+counterTypeEnum: defined in CL/cl_intel.h
+
+	#define PERFQUERY_COUNTER_EVENT_INTEL                0x94F0
+	#define PERFQUERY_COUNTER_DURATION_NORM_INTEL        0x94F1
+	#define PERFQUERY_COUNTER_DURATION_RAW_INTEL         0x94F2
+	#define PERFQUERY_COUNTER_THROUGHPUT_INTEL           0x94F3
+	#define PERFQUERY_COUNTER_RAW_INTEL                  0x94F4
+	#define PERFQUERY_COUNTER_TIMESTAMP_INTEL            0x94F5
+
+counterDataTypeEnum:
+
+	#define PERFQUERY_COUNTER_DATA_UINT32_INTEL          0x94F8
+	#define PERFQUERY_COUNTER_DATA_UINT64_INTEL          0x94F9
+	#define PERFQUERY_COUNTER_DATA_FLOAT_INTEL           0x94FA
+	#define PERFQUERY_COUNTER_DATA_DOUBLE_INTEL          0x94FB
+	#define PERFQUERY_COUNTER_DATA_BOOL32_INTEL          0x94FC
+
+rawCounterMaxValue: max counter value
+
+##clCreatePerfQueryIntel(cl_context context, cl_uint queryId, cl_perf_query_intel *queryHandle)
+
+Create a perf query instance, returned in queryHandle.
+
+At any time only one type of perf query could be enabled. And how much query
+instance could be enabled, depends on "noInstances" parameters in clGetPerfQueryInfoIntel()
+return.
+
+##clDeletePerfQueryIntel(cl_context context, cl_perf_query_intel queryHandle)
+
+Destroy a perf query instance.
+
+##clBeginPerfQueryIntel(cl_context context, cl_perf_query_intel queryHandle)
+
+Mark the begin of perf query instance.
+
+##clEndPerfQueryIntel(cl_context context, cl_perf_query_intel queryHandle)
+
+Mark the end of perf query instance.
+
+##clGetPerfQueryDataIntel(cl_context context,
+			cl_perf_query_intel queryHandle,
+			cl_uint flags, size_t dataSize, void *data,
+			cl_uint *bytesWritten)
+
+Get data for last instance query.
+
+dataSize: perf query's data size
+data: return perf data for last query
+bytesWritten: actual written bytes
+
+After got perf data, use perf counters' info about counter offset and
+data size in perf buffer, to get value for counters.
