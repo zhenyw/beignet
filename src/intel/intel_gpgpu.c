@@ -144,8 +144,6 @@ intel_gpgpu_delete_finished(intel_gpgpu_t *gpgpu)
     drm_intel_bo_unreference(gpgpu->printf_b.ibo);
   if (gpgpu->aux_buf.bo)
     drm_intel_bo_unreference(gpgpu->aux_buf.bo);
-  if (gpgpu->perf_b.bo)
-    drm_intel_bo_unreference(gpgpu->perf_b.bo);
   if (gpgpu->stack_b.bo)
     drm_intel_bo_unreference(gpgpu->stack_b.bo);
   if (gpgpu->scratch_b.bo)
@@ -775,20 +773,6 @@ intel_gpgpu_batch_start(intel_gpgpu_t *gpgpu)
   intel_gpgpu_load_curbe_buffer(gpgpu);
   intel_gpgpu_load_idrt(gpgpu);
 
-  if (gpgpu->perf_b.bo) {
-    BEGIN_BATCH(gpgpu->batch, 3);
-    OUT_BATCH(gpgpu->batch,
-              (0x28 << 23) | /* MI_REPORT_PERF_COUNT */
-              (3 - 2));      /* length-2 */
-    OUT_RELOC(gpgpu->batch, gpgpu->perf_b.bo,
-              I915_GEM_DOMAIN_RENDER,
-              I915_GEM_DOMAIN_RENDER,
-              0 |  /* Offset for the start "counters" */
-              1);  /* Use GTT and not PGTT */
-    OUT_BATCH(gpgpu->batch, 0);
-    ADVANCE_BATCH(gpgpu->batch);
-  }
-
   /* Insert PIPE_CONTROL for time stamp of start*/
   if (gpgpu->time_stamp_b.bo)
     intel_gpgpu_write_timestamp(gpgpu, 0);
@@ -818,21 +802,6 @@ intel_gpgpu_batch_end(intel_gpgpu_t *gpgpu, int32_t flush_mode)
   /* Insert PIPE_CONTROL for time stamp of end*/
   if (gpgpu->time_stamp_b.bo)
     intel_gpgpu_write_timestamp(gpgpu, 1);
-
-  /* Insert the performance counter command */
-  if (gpgpu->perf_b.bo) {
-    BEGIN_BATCH(gpgpu->batch, 3);
-    OUT_BATCH(gpgpu->batch,
-              (0x28 << 23) | /* MI_REPORT_PERF_COUNT */
-              (3 - 2));      /* length-2 */
-    OUT_RELOC(gpgpu->batch, gpgpu->perf_b.bo,
-              I915_GEM_DOMAIN_RENDER,
-              I915_GEM_DOMAIN_RENDER,
-              512 |  /* Offset for the end "counters" */
-              1);    /* Use GTT and not PGTT */
-    OUT_BATCH(gpgpu->batch, 0);
-    ADVANCE_BATCH(gpgpu->batch);
-  }
 
   intel_gpgpu_post_action(gpgpu, flush_mode);
   intel_batchbuffer_end_atomic(gpgpu->batch);
@@ -1766,15 +1735,6 @@ intel_gpgpu_states_setup(intel_gpgpu_t *gpgpu, cl_gpgpu_kernel *kernel)
 }
 
 static void
-intel_gpgpu_set_perf_counters(intel_gpgpu_t *gpgpu, cl_buffer *perf)
-{
-  if (gpgpu->perf_b.bo)
-    drm_intel_bo_unreference(gpgpu->perf_b.bo);
-  drm_intel_bo_reference((drm_intel_bo*) perf);
-  gpgpu->perf_b.bo = (drm_intel_bo*) perf;
-}
-
-static void
 intel_gpgpu_walker_gen7(intel_gpgpu_t *gpgpu,
                    uint32_t simd_sz,
                    uint32_t thread_n,
@@ -2115,7 +2075,6 @@ intel_set_gpgpu_callbacks(int device_id)
   cl_gpgpu_bind_buf = (cl_gpgpu_bind_buf_cb *) intel_gpgpu_bind_buf;
   cl_gpgpu_set_stack = (cl_gpgpu_set_stack_cb *) intel_gpgpu_set_stack;
   cl_gpgpu_state_init = (cl_gpgpu_state_init_cb *) intel_gpgpu_state_init;
-  cl_gpgpu_set_perf_counters = (cl_gpgpu_set_perf_counters_cb *) intel_gpgpu_set_perf_counters;
   cl_gpgpu_upload_curbes = (cl_gpgpu_upload_curbes_cb *) intel_gpgpu_upload_curbes;
   cl_gpgpu_alloc_constant_buffer  = (cl_gpgpu_alloc_constant_buffer_cb *) intel_gpgpu_alloc_constant_buffer;
   cl_gpgpu_states_setup = (cl_gpgpu_states_setup_cb *) intel_gpgpu_states_setup;

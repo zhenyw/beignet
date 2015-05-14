@@ -71,7 +71,6 @@ LOCAL cl_gpgpu_bind_image_cb *cl_gpgpu_bind_image = NULL;
 LOCAL cl_gpgpu_get_cache_ctrl_cb *cl_gpgpu_get_cache_ctrl = NULL;
 LOCAL cl_gpgpu_state_init_cb *cl_gpgpu_state_init = NULL;
 LOCAL cl_gpgpu_alloc_constant_buffer_cb * cl_gpgpu_alloc_constant_buffer = NULL;
-LOCAL cl_gpgpu_set_perf_counters_cb *cl_gpgpu_set_perf_counters = NULL;
 LOCAL cl_gpgpu_upload_curbes_cb *cl_gpgpu_upload_curbes = NULL;
 LOCAL cl_gpgpu_states_setup_cb *cl_gpgpu_states_setup = NULL;
 LOCAL cl_gpgpu_upload_samplers_cb *cl_gpgpu_upload_samplers = NULL;

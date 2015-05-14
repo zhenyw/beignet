@@ -168,10 +168,6 @@ extern cl_gpgpu_set_scratch_cb *cl_gpgpu_set_scratch;
 typedef int (cl_gpgpu_state_init_cb)(cl_gpgpu, uint32_t max_threads, uint32_t size_cs_entry, int profiling);
 extern cl_gpgpu_state_init_cb *cl_gpgpu_state_init;
 
-/* Set the buffer object where to report performance counters */
-typedef void (cl_gpgpu_set_perf_counters_cb)(cl_gpgpu, cl_buffer perf);
-extern cl_gpgpu_set_perf_counters_cb *cl_gpgpu_set_perf_counters;
-
 /* Fills current curbe buffer with data */
 typedef int (cl_gpgpu_upload_curbes_cb)(cl_gpgpu, const void* data, uint32_t size);
 extern cl_gpgpu_upload_curbes_cb *cl_gpgpu_upload_curbes;

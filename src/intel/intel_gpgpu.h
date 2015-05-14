@@ -60,7 +60,6 @@ struct intel_gpgpu
   unsigned long sampler_bitmap;          /* sampler usage bitmap. */
 
   struct { drm_intel_bo *bo; } stack_b;
-  struct { drm_intel_bo *bo; } perf_b;
   struct { drm_intel_bo *bo; } scratch_b;
   struct { drm_intel_bo *bo; } constant_b;
   struct { drm_intel_bo *bo; } time_stamp_b;  /* time stamp buffer */
