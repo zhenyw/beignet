@@ -134,19 +134,25 @@ typedef CL_API_ENTRY cl_int (CL_API_CALL *clGetMemObjectFdIntel_fn)(
                              int*         /* returned fd */);
 
 /* Intel performance query */
+/* XXX using temporary "experimental" token values from 0x10000 for now.
+ * vendor extension value is from 0x4000.
+ */
+#define PERFQUERY_COUNTER_EVENT_INTEL                0x10000
+#define PERFQUERY_COUNTER_DURATION_NORM_INTEL        0x10001
+#define PERFQUERY_COUNTER_DURATION_RAW_INTEL         0x10002
+#define PERFQUERY_COUNTER_THROUGHPUT_INTEL           0x10003
+#define PERFQUERY_COUNTER_RAW_INTEL                  0x10004
+#define PERFQUERY_COUNTER_TIMESTAMP_INTEL            0x10005
 
-#define PERFQUERY_COUNTER_EVENT_INTEL                0x94F0
-#define PERFQUERY_COUNTER_DURATION_NORM_INTEL        0x94F1
-#define PERFQUERY_COUNTER_DURATION_RAW_INTEL         0x94F2
-#define PERFQUERY_COUNTER_THROUGHPUT_INTEL           0x94F3
-#define PERFQUERY_COUNTER_RAW_INTEL                  0x94F4
-#define PERFQUERY_COUNTER_TIMESTAMP_INTEL            0x94F5
+#define PERFQUERY_COUNTER_DATA_UINT32_INTEL          0x10008
+#define PERFQUERY_COUNTER_DATA_UINT64_INTEL          0x10009
+#define PERFQUERY_COUNTER_DATA_FLOAT_INTEL           0x1000A
+#define PERFQUERY_COUNTER_DATA_DOUBLE_INTEL          0x1000B
+#define PERFQUERY_COUNTER_DATA_BOOL32_INTEL          0x1000C
 
-#define PERFQUERY_COUNTER_DATA_UINT32_INTEL          0x94F8
-#define PERFQUERY_COUNTER_DATA_UINT64_INTEL          0x94F9
-#define PERFQUERY_COUNTER_DATA_FLOAT_INTEL           0x94FA
-#define PERFQUERY_COUNTER_DATA_DOUBLE_INTEL          0x94FB
-#define PERFQUERY_COUNTER_DATA_BOOL32_INTEL          0x94FC
+#define PERFQUERY_WAIT_INTEL                         (1 << 0)
+#define PERFQUERY_DONOT_FLUSH_INTEL                  (1 << 1)
+#define PERFQUERY_FLUSH_INTEL                        (1 << 2)
   
 typedef struct perf_query_object *cl_perf_query_intel;
   

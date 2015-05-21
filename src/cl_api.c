@@ -3582,7 +3582,6 @@ clGetPerfQueryDataIntel(cl_context context,
 
   err = intel_perf_query_get_data(context, queryHandle, flags,
 				  dataSize, data, bytesWritten);
-    
 error:
   return err;
 }

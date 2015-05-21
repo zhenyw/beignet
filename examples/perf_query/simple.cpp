@@ -89,7 +89,7 @@ int main(int argc, char** argv)
     
     // Fill our data set with random float values
     //
-    int i = 0;
+    unsigned int i = 0;
     unsigned int count = DATA_SIZE;
     for(i = 0; i < count; i++)
         data[i] = rand() / (float)RAND_MAX;
@@ -314,7 +314,7 @@ int main(int argc, char** argv)
     clFinish(commands);
 
     cl_get_perf_query_data(context, query,
-			   0, data_size, perf_data, &written);
+			   PERFQUERY_WAIT_INTEL, data_size, perf_data, &written);
 
     printf("perf data written: %d\n", written);
 #if 0

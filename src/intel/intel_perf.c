@@ -815,10 +815,8 @@ wait_perf_query(cl_context ctx,
    if (drm_intel_bo_references(obj->batch->buffer, bo))
       intel_batchbuffer_flush(obj->batch);
 
-#if 0 /* XXX */
    if (drm_intel_bo_busy(bo))
-         perf_debug("Stalling GPU waiting for a performance query object.\n");
-#endif
+         DBG("Stalling GPU waiting for a performance query object.\n");
 
    drm_intel_bo_wait_rendering(bo);
 }
@@ -1579,24 +1577,36 @@ get_oa_counter_data(cl_context ctx,
 /**
  * Get the performance query result.
  */
-static void
+static int
 get_perf_query_data(cl_context ctx,
 		    struct perf_query_object *obj,
+		    cl_uint flags,
 		    size_t data_size,
 		    cl_uint *data,
 		    cl_uint *bytes_written)
 {
    int written = 0;
 
-   //assert(is_perf_query_ready(ctx, queue, obj));
+   if (!is_perf_query_ready(ctx, obj)) {
+     if (flags == PERFQUERY_FLUSH_INTEL) {
+       if (drm_intel_bo_references(obj->batch->buffer, obj->oa.bo))
+	 intel_batchbuffer_flush(obj->batch);
+     }
 
-   /* XXX handle in flags */
-   wait_perf_query(ctx, obj);
+     /* Currently just ensure our perf query bo finish
+      * as we use our own batch for submit. Future might
+      * refactor with normal queue batch to sync with kernel
+      * finish point e.g clFinish
+      */
+     wait_perf_query(ctx, obj);
+   }
 
    written = get_oa_counter_data(ctx, obj, data_size, (uint8_t *)data);
    
    if (bytes_written)
       *bytes_written = written;
+
+   return 0;
 }
 
 static void
@@ -1751,12 +1761,9 @@ intel_perf_query_get_data(cl_context context,
 {
   struct perf_query_object *obj = (struct perf_query_object *)queryHandle;
 
-  /* XXX flags? */
-  get_perf_query_data(context, obj,
-		      dataSize, data,
-		      bytesWritten);
-
-  return 0;
+  return get_perf_query_data(context, obj, flags,
+			     dataSize, data,
+			     bytesWritten);
 }
 
 
