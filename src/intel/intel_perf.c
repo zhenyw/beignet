@@ -204,13 +204,6 @@ struct oa_perf_sample {
  * #define mb() atomic_thread_fence(memory_order_seq_cst)
  */
 
-/* Allow building for a more recent kernel than the system headers
- * correspond too... */
-#ifndef PERF_EVENT_IOC_FLUSH
-#include <linux/ioctl.h>
-#define PERF_EVENT_IOC_FLUSH                 _IO ('$', 9)
-#endif
-
 #define SECOND_SNAPSHOT_OFFSET_IN_BYTES 2048
 
 static inline size_t
@@ -472,8 +465,7 @@ accumulate_oa_snapshots(cl_context ctx,
    uint64_t end_timestamp;
    uint8_t scratch[MAX_OA_PERF_SAMPLE_SIZE];
 
-   if (perf_ioctl(ctx->perfquery.perf_oa_event_fd,
-                  PERF_EVENT_IOC_FLUSH, 0) < 0)
+   if (fsync(ctx->perfquery.perf_oa_event_fd) < 0)
       DBG("Failed to flush outstanding perf events: %m\n");
 
    drm_intel_bo_map(obj->oa.bo, false);
